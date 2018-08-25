@@ -51,7 +51,7 @@ func main() {
 			response, err := stream.Recv()
 			if err != nil {
 				log.Printf("Receiving %v: error: %v", response, err)
-				continue
+				return
 			}
 			log.Printf("Received: %v", response)
 		}
