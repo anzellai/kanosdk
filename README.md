@@ -8,4 +8,4 @@ I chose [Protocol Buffers](https://developers.google.com/protocol-buffers/) for 
 
 I also chose [Go](https://golang.org/) to write the sample server & client for its portability, you can simply generate a client in your preferred language and communicate to my prebuilt server. Of course you can simply run both prebuilt server & client and play around with them, no compilation required.
 
-Linux, Darwin (MacOS) and Windows are prebuilt and stored at the [/bin folder](https://github.com/anzellai/kanosdk/bin).
+Linux, Darwin (MacOS) and Windows are prebuilt and stored at the [/bin folder](https://github.com/anzellai/kanosdk/tree/master/bin).
