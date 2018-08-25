@@ -46,6 +46,17 @@ func main() {
 		}
 	}()
 
+	go func() {
+		for {
+			response, err := stream.Recv()
+			if err != nil {
+				log.Printf("Receiving %v: error: %v", response, err)
+				continue
+			}
+			log.Printf("Received: %v", response)
+		}
+	}()
+
 	<-waitc
 	stream.CloseSend()
 }

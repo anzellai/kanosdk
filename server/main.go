@@ -84,7 +84,7 @@ func connectorHandler(c chan string, name, data string) {
 	vm.Store(name, conn)
 
 	bits := strings.Split(data, " ")
-	u4 := uuid.Must(uuid.NewV4())
+	u4 := uuid.NewV4()
 	rpcData := struct {
 		Type   string   `json:"type"`
 		ID     string   `json:"id"`
