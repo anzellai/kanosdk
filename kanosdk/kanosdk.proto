@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package kanosdk;
+
+service Connector {
+    rpc Communicate(stream DeviceRequest) returns (stream DeviceResponse) {}
+}
+
+message DeviceRequest {
+    string name = 1;
+    string data = 2;
+}
+
+message DeviceResponse {
+    string data = 1;
+}
