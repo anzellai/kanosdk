@@ -6,44 +6,40 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strings"
 	"sync"
 
 	pb "github.com/anzellai/kanosdk/kanosdk"
-	uuid "github.com/satori/go.uuid"
 	serial "go.bug.st/serial.v1"
 	"google.golang.org/grpc"
 )
 
 type server struct{}
 
+// Communicate is the entry point to establish device connection
 func (*server) Communicate(stream pb.Connector_CommunicateServer) error {
 	fmt.Println("Establish connection...")
 	for {
-		request, err := stream.Recv()
+		streamRequest, err := stream.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			fmt.Printf("Error from %v: %s\n", request, err.Error())
+			fmt.Printf("Error from %v: %s\n", streamRequest, err.Error())
 			break
 		}
-		fmt.Printf("Stream from %s: %s\n", request.Name, request.Data)
-		cReq := make(chan *pb.DeviceRequest)
+		fmt.Printf("Stream from %s: %v\n", streamRequest.Name, streamRequest.Request)
+		cReq := make(chan *pb.StreamRequest)
 		go func() {
 			for r := range cReq {
-				c := make(chan string)
-				go connectorHandler(c, r.Name, r.Data)
-				for data := range c {
-					response := &pb.DeviceResponse{
-						Data: string(data),
-					}
-					fmt.Printf("Stream sent: %s\n", data)
+				c := make(chan *pb.StreamResponse)
+				go connectorHandler(c, r)
+				for response := range c {
+					fmt.Printf("Stream sent: %v\n", response)
 					stream.Send(response)
 				}
 			}
 		}()
-		cReq <- request
+		cReq <- streamRequest
 	}
 
 	defer func() {
@@ -63,10 +59,19 @@ func (*server) Communicate(stream pb.Connector_CommunicateServer) error {
 
 var vm sync.Map
 
-func connectorHandler(c chan string, name, data string) {
+func connectorHandler(c chan *pb.StreamResponse, request *pb.StreamRequest) {
 	var conn io.ReadWriteCloser
 	var err error
-	cache, ok := vm.Load(name)
+	data := &pb.StreamResponse{
+		Name: request.Name,
+		Response: &pb.Response{
+			Type:   "rpc-response",
+			Id:     request.Request.Id,
+			Name:   request.Name,
+			Detail: &pb.Detail{},
+		},
+	}
+	cache, ok := vm.Load(request.Name)
 	if ok {
 		conn = cache.(io.ReadWriteCloser)
 		conn.Close()
@@ -76,43 +81,28 @@ func connectorHandler(c chan string, name, data string) {
 		DataBits: 8,
 	}
 
-	conn, err = serial.Open(name, options)
+	conn, err = serial.Open(request.Name, options)
 	if err != nil {
-		c <- fmt.Sprintf("device error: %v", err)
+		data.Response.Detail.Error = fmt.Sprintf("device error: %s", err.Error())
+		c <- data
 		return
 	}
-	vm.Store(name, conn)
+	vm.Store(request.Name, conn)
 
-	bits := strings.Split(data, " ")
-	u4 := uuid.NewV4()
-	rpcData := struct {
-		Type   string   `json:"type"`
-		ID     string   `json:"id"`
-		Method string   `json:"method"`
-		Params []string `json:"params"`
-	}{
-		Type:   "rpc-request",
-		ID:     u4.String(),
-		Method: bits[0],
-		Params: []string{},
-	}
-	if len(bits) > 1 {
-		rpcData.Params = append(rpcData.Params, bits[1:]...)
-	}
-	rpcByte, err := json.Marshal(rpcData)
+	rpcByte, err := json.Marshal(request.Request)
 	if err != nil {
-		c <- fmt.Sprintf("marhsalling data error: %+v\n", err)
+		data.Response.Detail.Error = fmt.Sprintf("marhsalling data error: %s", err.Error())
+		c <- data
 		return
 	}
-
 	rpcByte = append(rpcByte, []byte("\r\n")...)
 
-	n, err := conn.Write(rpcByte)
+	_, err = conn.Write(rpcByte)
 	if err != nil {
-		c <- fmt.Sprintf("write error: %v", err)
+		data.Response.Detail.Error = fmt.Sprintf("write error: %s", err.Error())
+		c <- data
 		return
 	}
-	c <- fmt.Sprintf("written %d bytes", n)
 
 	var response []byte
 	for {
@@ -130,9 +120,16 @@ func connectorHandler(c chan string, name, data string) {
 		}
 
 		if string(buf) == "\n" {
-			result := string(response)
-			response = nil
-			c <- fmt.Sprintf("read %d bytes: %s\n", i, result)
+			err = json.Unmarshal(response, data.Response)
+			if err != nil {
+				data.Response.Detail.Error = fmt.Sprintf("read error: %s", err.Error())
+			} else {
+				response = nil
+			}
+			if data.Response.Id != request.Request.Id {
+				continue
+			}
+			c <- data
 		} else {
 			response = append(response, buf...)
 		}

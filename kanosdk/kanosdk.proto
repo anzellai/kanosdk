@@ -3,14 +3,40 @@ syntax = "proto3";
 package kanosdk;
 
 service Connector {
-    rpc Communicate(stream DeviceRequest) returns (stream DeviceResponse) {}
+    rpc Communicate(stream StreamRequest) returns (stream StreamResponse) {}
 }
 
-message DeviceRequest {
+message StreamRequest {
     string name = 1;
-    string data = 2;
+    Request request = 2;
 }
 
-message DeviceResponse {
-    string data = 1;
+message StreamResponse {
+    string name = 1;
+    Response response = 2;
+}
+
+message Request {
+    string type = 1;
+    string id = 2;
+    string method = 3;
+    repeated Param params = 4;
+}
+
+message Param {
+    string mode = 1;
+    string value = 2;
+}
+
+message Response {
+    string type = 1;
+    string id = 2;
+    string name = 3;
+    Detail detail = 4;
+}
+
+message Detail {
+    int32 proximity = 1;
+    string type = 2;
+    string error = 3;
 }
