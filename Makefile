@@ -20,28 +20,28 @@ BUILD_DIR_LINK=$(shell readlink ${BUILD_DIR})
 all: clean vet linux darwin windows
 
 linux: 
-	cd ${BUILD_DIR}/server; \
+	cd ${BUILD_DIR}/kanosdk/go/server; \
 	GOOS=linux GOARCH=${GOARCH} go build -o ${BUILD_DIR}/bin/linux/${BINARY}-server . ; \
-	cd ${BUILD_DIR}/client; \
+	cd ${BUILD_DIR}/kanosdk/go/client; \
 	GOOS=linux GOARCH=${GOARCH} go build -o ${BUILD_DIR}/bin/linux/${BINARY}-client . ; \
 	cd - >/dev/null
 
 darwin:
-	cd ${BUILD_DIR}/server; \
+	cd ${BUILD_DIR}/kanosdk/go/server; \
 	GOOS=darwin GOARCH=${GOARCH} go build -o ${BUILD_DIR}/bin/darwin/${BINARY}-server . ; \
-	cd ${BUILD_DIR}/client; \
+	cd ${BUILD_DIR}/kanosdk/go/client; \
 	GOOS=darwin GOARCH=${GOARCH} go build -o ${BUILD_DIR}/bin/darwin/${BINARY}-client . ; \
 	cd - >/dev/null
 
 windows:
-	cd ${BUILD_DIR}/server; \
+	cd ${BUILD_DIR}/kanosdk/go/server; \
 	GOOS=windows GOARCH=${GOARCH} go build -o ${BUILD_DIR}/bin/windows/${BINARY}-server.exe . ; \
-	cd ${BUILD_DIR}/client; \
+	cd ${BUILD_DIR}/kanosdk/go/client; \
 	GOOS=windows GOARCH=${GOARCH} go build -o ${BUILD_DIR}/bin/windows/${BINARY}-client.exe . ; \
 	cd - >/dev/null
 
 vet:
-	-cd ${BUILD_DIR}; \
+	cd ${BUILD_DIR}; \
 	go vet ./... > ${VET_REPORT} 2>&1 ; \
 	cd - >/dev/null
 

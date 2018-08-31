@@ -1,1 +1,2 @@
-protoc -I kanosdk/ kanosdk/kanosdk.proto --go_out=plugins=grpc:kanosdk
+protoc -I kanosdk/ kanosdk/kanosdk.proto --go_out=plugins=grpc:kanosdk/go
+python -m grpc_tools.protoc -I kanosdk/ kanosdk/kanosdk.proto --python_out=kanosdk/python --grpc_python_out=kanosdk/python
